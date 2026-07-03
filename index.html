@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#16181d">
+<title>Sushi Kingdom Scorecard</title>
+<style>
+  :root {
+    --bg: #16181d;
+    --card: #1f232b;
+    --card2: #262b35;
+    --text: #eef1f6;
+    --muted: #9aa3b2;
+    --accent: #fa8072;
+    --green: #4ade80;
+    --red: #f87171;
+    --line: #333a46;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding-bottom: 90px;
+  }
+  header {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(22,24,29,0.97);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+    padding: 10px 14px 12px;
+  }
+  .title-row { display: flex; align-items: center; justify-content: space-between; }
+  h1 { font-size: 18px; margin: 0; }
+  h1 span { color: var(--accent); }
+  .buffet-input {
+    display: flex; align-items: center; gap: 4px;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 10px; padding: 4px 8px; font-size: 14px; color: var(--muted);
+  }
+  .buffet-input b { color: var(--text); font-size: 15px; }
+  .paypanel {
+    margin-top: 8px; background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 10px 12px;
+  }
+  .pay-grid { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 8px; }
+  .pay-grid label { font-size: 11px; color: var(--muted); display: block; }
+  .pay-grid input, .pay-grid select {
+    width: 100%; padding: 7px; margin-top: 3px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--card2); color: var(--text); font-size: 15px;
+  }
+  .tip-wrap { display: flex; gap: 4px; margin-top: 3px; }
+  .tip-wrap input, .tip-wrap select { margin-top: 0; }
+  .tip-wrap select { width: 54px; }
+  .pay-total { margin-top: 8px; font-size: 12px; color: var(--muted); text-align: center; }
+  .presets { display: flex; gap: 8px; margin-top: 8px; }
+  .presets button {
+    flex: 1; padding: 6px 10px; border-radius: 16px; font-size: 13px; font-weight: 600;
+    background: var(--card); border: 1px solid var(--line); color: var(--muted);
+  }
+  .presets button.active { border-color: var(--accent); color: var(--accent); }
+  .score {
+    margin-top: 10px; text-align: center;
+  }
+  .score .big { font-size: 26px; font-weight: 800; }
+  .score .big.ahead { color: var(--green); }
+  .score .big.behind { color: var(--red); }
+  .progress {
+    height: 8px; background: var(--card2); border-radius: 4px;
+    margin: 8px 0 6px; overflow: hidden;
+  }
+  .progress > div {
+    height: 100%; background: var(--accent); border-radius: 4px;
+    transition: width 0.3s;
+  }
+  .progress > div.done { background: var(--green); }
+  .stat-row {
+    display: flex; justify-content: space-around; margin-top: 6px;
+    font-size: 12px; color: var(--muted);
+  }
+  .stat-row b { display: block; color: var(--text); font-size: 14px; }
+  .chips {
+    display: flex; gap: 8px; overflow-x: auto; padding: 10px 14px;
+    scrollbar-width: none;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: 0 0 auto; padding: 7px 14px; border-radius: 20px;
+    background: var(--card); border: 1px solid var(--line);
+    color: var(--muted); font-size: 14px; font-weight: 600;
+  }
+  .chip.active { background: var(--accent); color: #1a1a1a; border-color: var(--accent); }
+  main { padding: 0 14px; }
+  .cat-label { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin: 14px 2px 8px; }
+  .item {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 10px 12px; margin-bottom: 8px;
+  }
+  .item.counted { border-color: var(--accent); }
+  .item-info { flex: 1; min-width: 0; }
+  .item-name { font-size: 15px; font-weight: 600; }
+  .item-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .stepper { display: flex; align-items: center; gap: 2px; }
+  .stepper button {
+    width: 40px; height: 40px; border-radius: 12px; border: none;
+    background: var(--card2); color: var(--text); font-size: 22px; font-weight: 600;
+  }
+  .stepper button:active { background: var(--accent); color: #1a1a1a; }
+  .stepper .count { width: 34px; text-align: center; font-size: 17px; font-weight: 700; }
+  .stepper .count.zero { color: var(--muted); font-weight: 400; }
+  .tabbar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
+    display: flex; background: rgba(22,24,29,0.97);
+    backdrop-filter: blur(8px); border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tabbar button {
+    flex: 1; background: none; border: none; color: var(--muted);
+    font-size: 13px; font-weight: 600; padding: 12px 0 10px;
+  }
+  .tabbar button.active { color: var(--accent); }
+  .tabbar button .ico { display: block; font-size: 20px; margin-bottom: 2px; }
+  .btn {
+    display: block; width: 100%; padding: 14px; border: none;
+    border-radius: var(--radius); font-size: 16px; font-weight: 700;
+  }
+  .btn-primary { background: var(--accent); color: #1a1a1a; }
+  .btn-ghost { background: var(--card); color: var(--muted); border: 1px solid var(--line); margin-top: 8px; }
+  .btn-danger { background: transparent; color: var(--red); border: 1px solid var(--red); margin-top: 8px; }
+  .finish-area { margin: 18px 0 10px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 14px; margin-bottom: 10px;
+  }
+  .card h3 { margin: 0 0 8px; font-size: 15px; }
+  .hist-row { display: flex; justify-content: space-between; align-items: center; }
+  .hist-main { font-size: 15px; font-weight: 600; }
+  .hist-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .hist-delta { font-size: 16px; font-weight: 800; }
+  .hist-delta.ahead { color: var(--green); }
+  .hist-delta.behind { color: var(--red); }
+  .del-btn { background: none; border: none; color: var(--muted); font-size: 18px; padding: 6px; }
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; }
+  .summary-grid .cell b { display: block; font-size: 18px; }
+  .summary-grid .cell span { font-size: 12px; color: var(--muted); }
+  .edit-form { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .edit-form label { font-size: 11px; color: var(--muted); display: block; }
+  .edit-form .full { grid-column: 1 / -1; }
+  .edit-form input, .edit-form select {
+    width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--card2); color: var(--text); font-size: 15px;
+  }
+  .edit-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .edit-actions .btn { padding: 10px; font-size: 14px; }
+  .small-edit { background: none; border: none; color: var(--muted); font-size: 16px; padding: 8px; }
+  .empty { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 14px; }
+  .bill { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .bill th {
+    color: var(--muted); font-weight: 600; padding: 5px 3px;
+    border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap;
+  }
+  .bill td { padding: 7px 3px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  .bill th:first-child, .bill td:first-child { text-align: left; white-space: normal; }
+  .bill td:first-child { font-weight: 600; }
+  .bill tfoot td { font-weight: 800; border-bottom: none; border-top: 2px solid var(--muted); }
+  .bill-line { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; color: var(--muted); }
+  .bill-line b { color: var(--text); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title-row">
+    <h1>🍣 Sushi <span>Kingdom</span></h1>
+    <button class="buffet-input" id="payToggle">You pay <b id="payTotalHdr"></b></button>
+  </div>
+  <div class="presets">
+    <button class="preset" data-price="24.99">Lunch $24.99</button>
+    <button class="preset" data-price="36.99">Dinner $36.99</button>
+    <button class="preset" id="customBtn">Custom</button>
+  </div>
+  <div class="paypanel" id="payPanel" style="display:none">
+    <div class="pay-grid">
+      <label>Buffet $<input id="payBase" type="number" step="0.01" inputmode="decimal"></label>
+      <label>Tax %<input id="payTax" type="number" step="0.01" inputmode="decimal"></label>
+      <label>Tip<span class="tip-wrap"><input id="payTip" type="number" step="0.01" inputmode="decimal"><select id="payTipMode"><option value="%">%</option><option value="$">$</option></select></span></label>
+    </div>
+    <div class="pay-total" id="payBreakdown"></div>
+  </div>
+  <div class="score" id="scoreboard"></div>
+</header>
+
+<div id="view"></div>
+
+<nav class="tabbar">
+  <button data-tab="eat" class="active"><span class="ico">🍣</span>Eat</button>
+  <button data-tab="bill"><span class="ico">🧾</span>Bill</button>
+  <button data-tab="history"><span class="ico">📊</span>History</button>
+  <button data-tab="items"><span class="ico">✏️</span>Items</button>
+</nav>
+
+<script>
+// ---------- Default menu: price = à la carte retail (Boston, MA market),
+// ---------- cost = est. restaurant cost incl. Boston labor/rent share,
+// ---------- cal/p/c/f = calories, protein g, carbs g, fat g. All editable in the Items tab.
+const DEFAULT_ITEMS = [
+  // Nigiri (per piece)
+  ["Salmon Nigiri","Nigiri","pc",4.00,0.80,68,3.5,9,2],
+  ["Tuna Nigiri","Nigiri","pc",4.50,1.10,55,4.5,9,0.4],
+  ["Yellowtail Nigiri","Nigiri","pc",4.75,1.20,62,4,9,1.5],
+  ["Eel (Unagi) Nigiri","Nigiri","pc",4.50,1.05,75,3.5,10,2.5],
+  ["Shrimp (Ebi) Nigiri","Nigiri","pc",3.50,0.65,50,3.5,9,0.3],
+  ["White Tuna Nigiri","Nigiri","pc",3.75,0.75,65,3.5,9,2.5],
+  ["Red Snapper Nigiri","Nigiri","pc",3.75,0.80,52,3.8,9,0.4],
+  ["Octopus (Tako) Nigiri","Nigiri","pc",3.75,0.90,50,4,9,0.3],
+  ["Squid (Ika) Nigiri","Nigiri","pc",3.50,0.70,50,3.5,9,0.3],
+  ["Scallop Nigiri","Nigiri","pc",4.50,1.20,55,3.5,9.5,0.5],
+  ["Salmon Roe (Ikura)","Nigiri","pc",4.75,1.25,60,3.5,9.5,1.5],
+  ["Smelt Roe (Masago)","Nigiri","pc",3.50,0.70,55,3,9.5,1.2],
+  ["Egg (Tamago) Nigiri","Nigiri","pc",3.00,0.40,65,3,10.5,1.5],
+  ["Crab Stick Nigiri","Nigiri","pc",3.00,0.45,55,2.5,11,0.3],
+  ["Torched Salmon Nigiri","Nigiri","pc",4.50,0.85,75,3.5,9,3],
+  // Sashimi (per piece, ~1 oz)
+  ["Salmon Sashimi","Sashimi","pc",4.50,1.00,52,5.5,0,3],
+  ["Tuna Sashimi","Sashimi","pc",4.75,1.30,35,7,0,0.3],
+  ["Yellowtail Sashimi","Sashimi","pc",5.00,1.40,41,6,0,1.5],
+  ["White Fish Sashimi","Sashimi","pc",4.00,0.85,35,6.5,0,0.5],
+  // Rolls (per roll)
+  ["California Roll","Rolls","roll",8.50,1.85,255,9,38,7],
+  ["Spicy Tuna Roll","Rolls","roll",10.00,2.30,290,12,36,10],
+  ["Spicy Salmon Roll","Rolls","roll",10.00,2.05,305,11,36,12],
+  ["Philadelphia Roll","Rolls","roll",10.50,2.40,320,12,34,14],
+  ["Salmon Avocado Roll","Rolls","roll",10.50,2.30,305,11,37,12],
+  ["Tuna Roll","Rolls","roll",8.50,1.95,185,10,27,2],
+  ["Salmon Roll","Rolls","roll",8.50,1.70,210,9,27,6],
+  ["Eel Avocado Roll","Rolls","roll",12.00,2.75,370,11,42,16],
+  ["Shrimp Tempura Roll","Rolls","roll",13.00,2.85,510,14,60,21],
+  ["Dragon Roll","Rolls","roll",16.50,3.65,570,15,62,26],
+  ["Rainbow Roll","Rolls","roll",17.50,4.10,475,22,50,16],
+  ["Spider Roll","Rolls","roll",16.50,3.90,495,14,55,22],
+  ["Volcano Roll","Rolls","roll",16.00,3.45,520,16,50,25],
+  ["Cucumber Roll","Rolls","roll",6.00,0.90,135,3,30,0.5],
+  ["Avocado Roll","Rolls","roll",6.50,1.15,185,3,28,7],
+  ["Veggie Roll","Rolls","roll",7.50,1.25,170,4,32,2],
+  // Appetizers (per order)
+  ["Edamame","Appetizers","order",6.50,0.90,190,17,15,8],
+  ["Miso Soup","Appetizers","order",4.00,0.45,60,4,7,2],
+  ["Seaweed Salad","Appetizers","order",7.50,1.35,100,2,10,5],
+  ["Gyoza (6 pc)","Appetizers","order",9.00,1.70,280,10,28,14],
+  ["Crab Rangoon (6 pc)","Appetizers","order",8.50,1.60,340,8,30,20],
+  ["Spring Rolls (2 pc)","Appetizers","order",7.50,1.25,220,4,28,10],
+  ["Shrimp Tempura (5 pc)","Appetizers","order",12.00,2.50,450,15,40,25],
+  ["Vegetable Tempura","Appetizers","order",10.00,1.70,400,6,45,20],
+  ["Takoyaki (6 pc)","Appetizers","order",9.00,2.05,310,10,32,15],
+  ["Agedashi Tofu","Appetizers","order",7.50,1.15,200,8,15,12],
+  ["Chicken Teriyaki","Appetizers","order",12.00,2.85,430,32,20,24],
+  ["Chicken Katsu","Appetizers","order",12.00,2.75,480,28,35,25],
+  ["Fried Rice","Appetizers","order",10.00,1.40,420,10,65,12],
+  ["Squid Salad","Appetizers","order",8.00,1.70,130,8,10,6],
+  // Dessert
+  ["Mochi Ice Cream (1 pc)","Dessert","pc",3.75,1.00,110,1,17,4],
+  ["Green Tea Ice Cream","Dessert","order",5.00,0.90,180,3,22,9],
+  ["Tempura Banana","Dessert","order",7.50,1.35,320,3,45,14],
+];
+const CATS = ["Nigiri","Sashimi","Rolls","Appetizers","Dessert"];
+
+function defaultItems() {
+  return DEFAULT_ITEMS.map((d, i) => ({
+    id: "d" + i, name: d[0], cat: d[1], unit: d[2],
+    price: d[3], cost: d[4], cal: d[5], p: d[6], c: d[7], f: d[8],
+  }));
+}
+
+// ---------- State ----------
+const store = {
+  get(k, fallback) {
+    try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; }
+    catch { return fallback; }
+  },
+  set(k, v) { localStorage.setItem(k, JSON.stringify(v)); },
+};
+let items = store.get("st_items", null) || defaultItems();
+let meal = store.get("st_meal", {});          // itemId -> count
+let history = store.get("st_history", []);    // finished visits
+// What the meal costs you: base buffet price + tax + tip.
+// Sushi Kingdom (1001 Massachusetts Ave, Cambridge): dinner $36.99, lunch from $24.99.
+// Tax defaults to 7% (MA 6.25% meals tax + 0.75% Cambridge local option).
+let pay = store.get("st_pay", null);
+if (!pay) {
+  const oldBuffet = store.get("st_buffet", null); // migrate pre-tax/tip versions
+  pay = { base: typeof oldBuffet === "number" ? oldBuffet : 36.99, tax: 7, tip: 18, tipMode: "%" };
+}
+function taxAmount() { return pay.base * pay.tax / 100; }
+function tipAmount() { return pay.tipMode === "%" ? pay.base * pay.tip / 100 : pay.tip; }
+function totalPaid() { return pay.base + taxAmount() + tipAmount(); }
+let tab = "eat";
+let activeCat = "All";
+let editingId = null;                          // item being edited in Items tab
+let addingNew = false;
+let expandedVisit = null;                      // history entry showing its itemized bill
+
+function save() {
+  store.set("st_items", items);
+  store.set("st_meal", meal);
+  store.set("st_history", history);
+  store.set("st_pay", pay);
+}
+
+// ---------- Totals ----------
+function totals() {
+  let t = { value: 0, cost: 0, cal: 0, p: 0, c: 0, f: 0, count: 0 };
+  for (const it of items) {
+    const n = meal[it.id] || 0;
+    if (!n) continue;
+    t.value += n * it.price; t.cost += n * it.cost;
+    t.cal += n * it.cal; t.p += n * it.p; t.c += n * it.c; t.f += n * it.f;
+    t.count += n;
+  }
+  return t;
+}
+const $ = (s) => document.querySelector(s);
+const money = (v) => "$" + v.toFixed(2);
+const esc = (s) => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+
+// ---------- Scoreboard ----------
+function renderScore() {
+  const t = totals();
+  const paid = totalPaid();
+  const delta = t.value - paid;
+  const pct = paid > 0 ? Math.min(100, (t.value / paid) * 100) : 0;
+  const big = delta >= 0
+    ? `<div class="big ahead">▲ ${money(delta)} ahead — you beat it!</div>`
+    : `<div class="big behind">${money(-delta)} to go</div>`;
+  const margin = pay.base - t.cost; // tax goes to the state, tip to the staff
+  $("#scoreboard").innerHTML = `
+    ${big}
+    <div class="progress"><div class="${delta >= 0 ? "done" : ""}" style="width:${pct}%"></div></div>
+    <div class="stat-row">
+      <div><b>${money(t.value)}</b>eaten (menu $)</div>
+      <div><b>${money(t.cost)}</b>their cost</div>
+      <div><b>${margin >= 0 ? money(margin) : "−" + money(-margin)}</b>their margin</div>
+    </div>
+    <div class="stat-row">
+      <div><b>${Math.round(t.cal)}</b>kcal</div>
+      <div><b>${Math.round(t.p)}g</b>protein</div>
+      <div><b>${Math.round(t.c)}g</b>carbs</div>
+      <div><b>${Math.round(t.f)}g</b>fat</div>
+    </div>`;
+}
+
+// ---------- Eat tab ----------
+function renderEat() {
+  const cats = ["All", ...CATS.filter((c) => items.some((it) => it.cat === c))];
+  const chips = cats.map((c) =>
+    `<button class="chip ${c === activeCat ? "active" : ""}" onclick="setCat('${c}')">${c}</button>`).join("");
+  const shown = items.filter((it) => activeCat === "All" || it.cat === activeCat);
+  let body = "";
+  for (const cat of CATS) {
+    const group = shown.filter((it) => it.cat === cat);
+    if (!group.length) continue;
+    body += `<div class="cat-label">${cat}</div>`;
+    body += group.map((it) => {
+      const n = meal[it.id] || 0;
+      return `
+      <div class="item ${n ? "counted" : ""}">
+        <div class="item-info">
+          <div class="item-name">${esc(it.name)}</div>
+          <div class="item-sub">${money(it.price)}/${it.unit} · ${Math.round(it.cal)} cal · ${it.p}g protein</div>
+        </div>
+        <div class="stepper">
+          <button onclick="bump('${it.id}',-1)">−</button>
+          <div class="count ${n ? "" : "zero"}">${n}</div>
+          <button onclick="bump('${it.id}',1)">+</button>
+        </div>
+      </div>`;
+    }).join("");
+  }
+  const t = totals();
+  $("#view").innerHTML = `
+    <div class="chips">${chips}</div>
+    <main>
+      ${body}
+      <div class="finish-area">
+        <button class="btn btn-primary" onclick="finishMeal()" ${t.count ? "" : "disabled"}>
+          Finish meal ${t.count ? "· " + money(t.value) + " eaten" : ""}
+        </button>
+        ${t.count ? `<button class="btn btn-ghost" onclick="resetMeal()">Reset current meal</button>` : ""}
+      </div>
+    </main>`;
+}
+
+function setCat(c) { activeCat = c; renderEat(); }
+function bump(id, d) {
+  const n = Math.max(0, (meal[id] || 0) + d);
+  if (n) meal[id] = n; else delete meal[id];
+  save(); renderScore(); renderEat();
+}
+function resetMeal() {
+  if (!confirm("Clear everything from the current meal?")) return;
+  meal = {}; save(); renderScore(); renderEat();
+}
+function finishMeal() {
+  const t = totals();
+  if (!t.count) return;
+  if (!confirm(`Finish meal? ${money(t.value)} eaten vs ${money(totalPaid())} paid.`)) return;
+  history.unshift({
+    date: new Date().toISOString(), buffet: totalPaid(), pay: { ...pay },
+    value: t.value, cost: t.cost, cal: t.cal, p: t.p, c: t.c, f: t.f, count: t.count,
+    items: mealLines(),
+  });
+  meal = {}; save(); renderScore();
+  tab = "history"; syncTabs(); render();
+}
+
+// ---------- Bill tab ----------
+function mealLines() {
+  return items.filter((it) => meal[it.id]).map((it) => ({
+    name: it.name, qty: meal[it.id], price: it.price, cost: it.cost,
+  }));
+}
+function billTable(lines) {
+  const tQ = lines.reduce((s, l) => s + l.qty, 0);
+  const tV = lines.reduce((s, l) => s + l.qty * l.price, 0);
+  const tC = lines.reduce((s, l) => s + l.qty * l.cost, 0);
+  const rows = lines.map((l) => `
+    <tr>
+      <td>${esc(l.name)}</td><td>${l.qty}</td>
+      <td>${money(l.price)}</td><td>${money(l.qty * l.price)}</td>
+      <td>${money(l.cost)}</td><td>${money(l.qty * l.cost)}</td>
+    </tr>`).join("");
+  return `<table class="bill">
+    <thead>
+      <tr><th rowspan="2">Item</th><th rowspan="2">Qty</th><th colspan="2">Menu price</th><th colspan="2">Their cost</th></tr>
+      <tr><th>Unit</th><th>Total</th><th>Unit</th><th>Total</th></tr>
+    </thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr><td>Total</td><td>${tQ}</td><td></td><td>${money(tV)}</td><td></td><td>${money(tC)}</td></tr></tfoot>
+  </table>`;
+}
+function renderBill() {
+  const lines = mealLines();
+  if (!lines.length) {
+    $("#view").innerHTML = `<main><div class="empty">Nothing counted yet — tap + on the Eat tab and your itemized bill shows up here.</div></main>`;
+    return;
+  }
+  const tV = lines.reduce((s, l) => s + l.qty * l.price, 0);
+  const tC = lines.reduce((s, l) => s + l.qty * l.cost, 0);
+  const delta = tV - totalPaid();
+  $("#view").innerHTML = `
+    <main style="padding-top:12px">
+      <div class="card">${billTable(lines)}</div>
+      <div class="card">
+        <h3>Bottom line</h3>
+        <div class="bill-line">Menu value eaten <b>${money(tV)}</b></div>
+        <div class="bill-line">Buffet (base) <b>${money(pay.base)}</b></div>
+        <div class="bill-line">Tax (${pay.tax}%) <b>${money(taxAmount())}</b></div>
+        <div class="bill-line">Tip${pay.tipMode === "%" ? ` (${pay.tip}%)` : ""} <b>${money(tipAmount())}</b></div>
+        <div class="bill-line">Total you pay <b>${money(totalPaid())}</b></div>
+        <div class="bill-line">${delta >= 0 ? "You're ahead by" : "Still to eat"} <b style="color:${delta >= 0 ? "var(--green)" : "var(--red)"}">${money(Math.abs(delta))}</b></div>
+        <div class="bill-line">Their ingredient/prep cost <b>${money(tC)}</b></div>
+        <div class="bill-line">Their margin on you <b>${money(pay.base - tC)}</b></div>
+      </div>
+    </main>`;
+}
+
+// ---------- History tab ----------
+function renderHistory() {
+  if (!history.length) {
+    $("#view").innerHTML = `<main><div class="empty">No visits yet. Finish a meal on the Eat tab and it lands here.</div></main>`;
+    return;
+  }
+  const visits = history.length;
+  const totalDelta = history.reduce((s, h) => s + (h.value - h.buffet), 0);
+  const best = history.reduce((a, b) => (a.value - a.buffet > b.value - b.buffet ? a : b));
+  const avgVal = history.reduce((s, h) => s + h.value, 0) / visits;
+  const rows = history.map((h, i) => {
+    const d = new Date(h.date);
+    const delta = h.value - h.buffet;
+    const detail = i === expandedVisit
+      ? `<div style="margin-top:10px">${h.items && h.items.length ? billTable(h.items) : '<div class="hist-sub">No itemized bill was saved for this visit.</div>'}</div>`
+      : "";
+    return `
+    <div class="card" onclick="toggleVisit(${i})">
+      <div class="hist-row">
+        <div>
+          <div class="hist-main">${d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})}</div>
+          <div class="hist-sub">${money(h.value)} eaten vs ${money(h.buffet)} paid · ${h.count} items · ${Math.round(h.cal)} kcal · ${Math.round(h.p)}g protein</div>
+        </div>
+        <div style="text-align:right">
+          <div class="hist-delta ${delta >= 0 ? "ahead" : "behind"}">${delta >= 0 ? "▲" : "▼"} ${money(Math.abs(delta))}</div>
+          <button class="del-btn" onclick="event.stopPropagation();delVisit(${i})">🗑</button>
+        </div>
+      </div>
+      ${detail}
+    </div>`;
+  }).join("");
+  $("#view").innerHTML = `
+    <main style="padding-top:12px">
+      <div class="card">
+        <h3>All-time</h3>
+        <div class="summary-grid">
+          <div class="cell"><b>${visits}</b><span>visits</span></div>
+          <div class="cell"><b style="color:${totalDelta >= 0 ? "var(--green)" : "var(--red)"}">${totalDelta >= 0 ? "+" : "−"}${money(Math.abs(totalDelta))}</b><span>net vs paid</span></div>
+          <div class="cell"><b>${money(avgVal)}</b><span>avg eaten</span></div>
+          <div class="cell"><b>${money(best.value - best.buffet)}</b><span>best visit</span></div>
+        </div>
+      </div>
+      ${rows}
+    </main>`;
+}
+function toggleVisit(i) {
+  expandedVisit = expandedVisit === i ? null : i;
+  renderHistory();
+}
+function delVisit(i) {
+  if (!confirm("Delete this visit?")) return;
+  history.splice(i, 1); expandedVisit = null; save(); renderHistory();
+}
+
+// ---------- Items tab ----------
+function itemForm(it) {
+  return `
+  <div class="edit-form">
+    <div class="full"><label>Name</label><input id="f_name" value="${esc(it.name)}"></div>
+    <div><label>Category</label><select id="f_cat">${CATS.map((c) => `<option ${c === it.cat ? "selected" : ""}>${c}</option>`).join("")}</select></div>
+    <div><label>Unit</label><select id="f_unit">${["pc","roll","order"].map((u) => `<option ${u === it.unit ? "selected" : ""}>${u}</option>`).join("")}</select></div>
+    <div><label>Menu price $</label><input id="f_price" type="number" step="0.01" inputmode="decimal" value="${it.price}"></div>
+    <div><label>Their cost $</label><input id="f_cost" type="number" step="0.01" inputmode="decimal" value="${it.cost}"></div>
+    <div><label>Calories</label><input id="f_cal" type="number" step="1" inputmode="decimal" value="${it.cal}"></div>
+    <div><label>Protein g</label><input id="f_p" type="number" step="0.1" inputmode="decimal" value="${it.p}"></div>
+    <div><label>Carbs g</label><input id="f_c" type="number" step="0.1" inputmode="decimal" value="${it.c}"></div>
+    <div><label>Fat g</label><input id="f_f" type="number" step="0.1" inputmode="decimal" value="${it.f}"></div>
+  </div>`;
+}
+function readForm() {
+  return {
+    name: $("#f_name").value.trim() || "Unnamed",
+    cat: $("#f_cat").value, unit: $("#f_unit").value,
+    price: parseFloat($("#f_price").value) || 0,
+    cost: parseFloat($("#f_cost").value) || 0,
+    cal: parseFloat($("#f_cal").value) || 0,
+    p: parseFloat($("#f_p").value) || 0,
+    c: parseFloat($("#f_c").value) || 0,
+    f: parseFloat($("#f_f").value) || 0,
+  };
+}
+function renderItems() {
+  let body = "";
+  if (addingNew) {
+    body += `<div class="card"><h3>New item</h3>
+      ${itemForm({ name: "", cat: "Rolls", unit: "roll", price: 0, cost: 0, cal: 0, p: 0, c: 0, f: 0 })}
+      <div class="edit-actions">
+        <button class="btn btn-primary" onclick="saveNew()">Add</button>
+        <button class="btn btn-ghost" style="margin:0" onclick="cancelEdit()">Cancel</button>
+      </div></div>`;
+  } else {
+    body += `<button class="btn btn-ghost" style="margin:0 0 10px" onclick="startAdd()">＋ Add item</button>`;
+  }
+  for (const cat of CATS) {
+    const group = items.filter((it) => it.cat === cat);
+    if (!group.length) continue;
+    body += `<div class="cat-label">${cat}</div>`;
+    body += group.map((it) => {
+      if (it.id === editingId) {
+        return `<div class="card">
+          ${itemForm(it)}
+          <div class="edit-actions">
+            <button class="btn btn-primary" onclick="saveEdit('${it.id}')">Save</button>
+            <button class="btn btn-ghost" style="margin:0" onclick="cancelEdit()">Cancel</button>
+            <button class="btn btn-danger" style="margin:0" onclick="delItem('${it.id}')">Delete</button>
+          </div></div>`;
+      }
+      return `<div class="item">
+        <div class="item-info">
+          <div class="item-name">${esc(it.name)}</div>
+          <div class="item-sub">${money(it.price)}/${it.unit} · costs them ${money(it.cost)} · ${Math.round(it.cal)} cal / ${it.p}p / ${it.c}c / ${it.f}f</div>
+        </div>
+        <button class="small-edit" onclick="startEdit('${it.id}')">✏️</button>
+      </div>`;
+    }).join("");
+  }
+  body += `<button class="btn btn-danger" onclick="resetDefaults()">Reset all items to defaults</button>`;
+  $("#view").innerHTML = `<main style="padding-top:12px">${body}</main>`;
+}
+function startAdd() { addingNew = true; editingId = null; renderItems(); }
+function startEdit(id) { editingId = id; addingNew = false; renderItems(); }
+function cancelEdit() { editingId = null; addingNew = false; renderItems(); }
+function saveNew() {
+  items.push({ id: "u" + Date.now(), ...readForm() });
+  addingNew = false; save(); renderItems(); renderScore();
+}
+function saveEdit(id) {
+  const it = items.find((x) => x.id === id);
+  Object.assign(it, readForm());
+  editingId = null; save(); renderItems(); renderScore();
+}
+function delItem(id) {
+  if (!confirm("Delete this item?")) return;
+  items = items.filter((x) => x.id !== id);
+  delete meal[id]; editingId = null;
+  save(); renderItems(); renderScore();
+}
+function resetDefaults() {
+  if (!confirm("Replace ALL items with the built-in defaults? Your edits will be lost (history is kept).")) return;
+  items = defaultItems(); meal = {};
+  save(); renderItems(); renderScore();
+}
+
+// ---------- Tabs & init ----------
+function syncTabs() {
+  document.querySelectorAll(".tabbar button").forEach((b) =>
+    b.classList.toggle("active", b.dataset.tab === tab));
+}
+function render() {
+  if (tab === "eat") renderEat();
+  else if (tab === "bill") renderBill();
+  else if (tab === "history") renderHistory();
+  else renderItems();
+}
+document.querySelectorAll(".tabbar button").forEach((b) =>
+  b.addEventListener("click", () => { tab = b.dataset.tab; syncTabs(); render(); }));
+
+const presetBtns = document.querySelectorAll(".preset");
+const payPanel = $("#payPanel");
+function syncPay() {
+  save();
+  $("#payTotalHdr").textContent = money(totalPaid());
+  const isPreset = pay.base === 24.99 || pay.base === 36.99;
+  presetBtns.forEach((b) => {
+    if (b.id === "customBtn") b.classList.toggle("active", !isPreset);
+    else b.classList.toggle("active", parseFloat(b.dataset.price) === pay.base);
+  });
+  $("#payBreakdown").textContent =
+    `${money(pay.base)} buffet + ${money(taxAmount())} tax + ${money(tipAmount())} tip = ${money(totalPaid())}`;
+  renderScore();
+  if (tab === "bill") render();
+}
+function togglePanel(show) { payPanel.style.display = show ? "" : "none"; }
+$("#payBase").value = pay.base;
+$("#payTax").value = pay.tax;
+$("#payTip").value = pay.tip;
+$("#payTipMode").value = pay.tipMode;
+["input", "change"].forEach((ev) => {
+  $("#payBase").addEventListener(ev, () => { pay.base = parseFloat($("#payBase").value) || 0; syncPay(); });
+  $("#payTax").addEventListener(ev, () => { pay.tax = parseFloat($("#payTax").value) || 0; syncPay(); });
+  $("#payTip").addEventListener(ev, () => { pay.tip = parseFloat($("#payTip").value) || 0; syncPay(); });
+});
+$("#payTipMode").addEventListener("change", () => { pay.tipMode = $("#payTipMode").value; syncPay(); });
+presetBtns.forEach((b) => b.addEventListener("click", () => {
+  if (b.id === "customBtn") {
+    togglePanel(payPanel.style.display === "none");
+  } else {
+    pay.base = parseFloat(b.dataset.price);
+    $("#payBase").value = pay.base;
+    syncPay();
+  }
+}));
+$("#payToggle").addEventListener("click", () => togglePanel(payPanel.style.display === "none"));
+
+syncPay();
+render();
+</script>
+</body>
+</html>
