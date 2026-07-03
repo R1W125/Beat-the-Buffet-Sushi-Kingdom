@@ -29,12 +29,15 @@
     padding-bottom: 90px;
   }
   header {
-    position: sticky; top: 0; z-index: 10;
+    /* fixed, not sticky: iOS momentum scroll can lag sticky elements a frame,
+       letting content flash above the header in standalone mode */
+    position: fixed; top: 0; left: 0; right: 0; z-index: 10;
     background: var(--bg);
     border-bottom: 1px solid var(--line);
     /* pad past the notch/status bar so nothing scrolls above the header */
     padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 12px;
   }
+  .ver { font-size: 10px; font-weight: 400; color: var(--muted); vertical-align: middle; }
   .title-row { display: flex; align-items: center; justify-content: space-between; }
   h1 { font-size: 18px; margin: 0; }
   h1 span { color: var(--accent); }
@@ -177,7 +180,7 @@
 
 <header>
   <div class="title-row">
-    <h1>🍣 Sushi <span>Kingdom</span></h1>
+    <h1>🍣 Sushi <span>Kingdom</span> <small class="ver">v4</small></h1>
     <button class="buffet-input" id="payToggle">You pay <b id="payTotalHdr"></b></button>
   </div>
   <div class="presets">
@@ -664,8 +667,15 @@ presetBtns.forEach((b) => b.addEventListener("click", () => {
 }));
 $("#payToggle").addEventListener("click", () => togglePanel(payPanel.style.display === "none"));
 
+// keep content below the fixed header, whatever its current height
+// (presets panel open/closed, chips shown/hidden, score line wrapping)
+const headerEl = document.querySelector("header");
+function padForHeader() { document.body.style.paddingTop = headerEl.offsetHeight + "px"; }
+new ResizeObserver(padForHeader).observe(headerEl);
+
 syncPay();
 render();
+padForHeader();
 </script>
 </body>
 </html>
