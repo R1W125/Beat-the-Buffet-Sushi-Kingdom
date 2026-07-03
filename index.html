@@ -41,12 +41,6 @@
   .title-row { display: flex; align-items: center; justify-content: space-between; }
   h1 { font-size: 18px; margin: 0; }
   h1 span { color: var(--accent); }
-  .buffet-input {
-    display: flex; align-items: center; gap: 4px;
-    background: var(--card); border: 1px solid var(--line);
-    border-radius: 10px; padding: 4px 8px; font-size: 14px; color: var(--muted);
-  }
-  .buffet-input b { color: var(--text); font-size: 15px; }
   .paypanel {
     margin-top: 8px; background: var(--card); border: 1px solid var(--line);
     border-radius: var(--radius); padding: 10px 12px;
@@ -87,6 +81,7 @@
     font-size: 12px; color: var(--muted);
   }
   .stat-row b { display: block; color: var(--text); font-size: 14px; }
+  .macro-line { margin-top: 6px; font-size: 11px; color: var(--muted); }
   .chips {
     display: flex; gap: 8px; overflow-x: auto; padding: 10px 0 0;
     scrollbar-width: none;
@@ -180,8 +175,7 @@
 
 <header>
   <div class="title-row">
-    <h1>🍣 Sushi <span>Kingdom</span> <small class="ver">v4</small></h1>
-    <button class="buffet-input" id="payToggle">You pay <b id="payTotalHdr"></b></button>
+    <h1>🍣 Sushi <span>Kingdom</span> <small class="ver">v5</small></h1>
   </div>
   <div class="presets">
     <button class="preset" data-price="24.99">Lunch $24.99</button>
@@ -350,12 +344,7 @@ function renderScore() {
       <div><b>${money(t.cost)}</b>their cost</div>
       <div><b>${margin >= 0 ? money(margin) : "−" + money(-margin)}</b>their margin</div>
     </div>
-    <div class="stat-row">
-      <div><b>${Math.round(t.cal)}</b>kcal</div>
-      <div><b>${Math.round(t.p)}g</b>protein</div>
-      <div><b>${Math.round(t.c)}g</b>carbs</div>
-      <div><b>${Math.round(t.f)}g</b>fat</div>
-    </div>`;
+    <div class="macro-line">${Math.round(t.cal)} kcal · ${Math.round(t.p)}g protein · ${Math.round(t.c)}g carbs · ${Math.round(t.f)}g fat</div>`;
 }
 
 // ---------- Eat tab ----------
@@ -634,7 +623,6 @@ const presetBtns = document.querySelectorAll(".preset");
 const payPanel = $("#payPanel");
 function syncPay() {
   save();
-  $("#payTotalHdr").textContent = money(totalPaid());
   const isPreset = pay.base === 24.99 || pay.base === 36.99;
   presetBtns.forEach((b) => {
     if (b.id === "customBtn") b.classList.toggle("active", !isPreset);
@@ -665,8 +653,6 @@ presetBtns.forEach((b) => b.addEventListener("click", () => {
     syncPay();
   }
 }));
-$("#payToggle").addEventListener("click", () => togglePanel(payPanel.style.display === "none"));
-
 // keep content below the fixed header, whatever its current height
 // (presets panel open/closed, chips shown/hidden, score line wrapping)
 const headerEl = document.querySelector("header");
